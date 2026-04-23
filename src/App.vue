@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import WireGuardConfigGenerator from "./WireGuardConfigGenerator.vue";
+import WireGuardRelayConfigGenerator from "./WireGuardRelayConfigGenerator.vue";
 
 interface ToolItem {
     name: string;
     path: string;
     description: string;
-    component: typeof WireGuardConfigGenerator;
+    component: typeof WireGuardRelayConfigGenerator;
 }
 
 const tools: ToolItem[] = [
     {
-        name: "WireGuard 配置生成器",
-        path: "/wireguard-config-generator",
-        description: "生成和预览 WireGuard 配置",
-        component: WireGuardConfigGenerator,
+        name: "WireGuard 中继配置生成器",
+        path: "/wireguard-relay-config-generator",
+        description: "生成 WireGuard 中继节点配置",
+        component: WireGuardRelayConfigGenerator,
     },
 ];
 

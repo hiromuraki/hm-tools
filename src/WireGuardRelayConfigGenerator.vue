@@ -15,12 +15,17 @@
                 <label class="block text-sm font-semibold mb-1.5 text-gray-600"
                     >Address (主机 IP)</label
                 >
-                <input
-                    type="text"
-                    v-model="config.host"
-                    placeholder="例如: 10.8.0.1/24"
-                    class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
-                />
+                <div class="flex items-center gap-2">
+                    <input
+                        type="text"
+                        v-model="config.host"
+                        placeholder="例如: 10.8.0.1"
+                        class="min-w-0 flex-1 p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
+                    />
+                    <span class="shrink-0 rounded-md bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-500">
+                        /24
+                    </span>
+                </div>
             </div>
 
             <div class="mb-4">
@@ -63,7 +68,7 @@
 
             <div class="mb-4">
                 <label class="block text-sm font-semibold mb-1.5 text-gray-600"
-                    >PublicKey (公钥 - 自动由私钥生成)</label
+                    >PublicKey (公钥 - 由私钥自动生成)</label
                 >
                 <div class="flex items-center gap-2">
                     <input
@@ -197,7 +202,7 @@
                 <div v-if="peer.expanded">
                     <div class="mb-4">
                         <label class="block text-sm font-semibold mb-1.5 text-gray-600"
-                            >节点备注 (Name)</label
+                            >节点备注</label
                         >
                         <input
                             type="text"
@@ -219,12 +224,14 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-semibold mb-1.5 text-gray-600"
-                            >AllowedIPs (允许的 IP)</label
+                            >主机号</label
                         >
                         <input
-                            type="text"
-                            v-model="peer.allowedIps"
-                            placeholder="例如: 10.8.0.2/32"
+                            type="number"
+                            min="1"
+                            step="1"
+                            v-model="peer.hostPart"
+                            placeholder="例如: 101"
                             class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
                         />
                     </div>
@@ -276,7 +283,7 @@ interface Peer {
     id: number;
     name: string;
     publicKey: string;
-    allowedIps: string;
+    hostPart: number | null;
     expanded: boolean;
 }
 
@@ -294,7 +301,7 @@ interface WgConfig {
 const STORAGE_KEY = "hm-tools.wireguard-config-generator";
 
 const createDefaultConfig = (): WgConfig => ({
-    host: "10.8.0.1/24",
+    host: "10.8.0.1",
     port: 51820,
     mtu: 1420,
     privateKey: "",
@@ -341,11 +348,15 @@ const loadConfig = () => {
         const savedConfig = JSON.parse(rawConfig) as Partial<WgConfig>;
         Object.assign(config, createDefaultConfig(), savedConfig);
 
+        if (typeof config.host === "string" && config.host.endsWith("/24")) {
+            config.host = config.host.slice(0, -3);
+        }
+
         config.peers = config.peers.map((peer, index) => ({
             id: typeof peer.id === "number" ? peer.id : index,
             name: typeof peer.name === "string" ? peer.name : "",
             publicKey: typeof peer.publicKey === "string" ? peer.publicKey : "",
-            allowedIps: typeof peer.allowedIps === "string" ? peer.allowedIps : "",
+            hostPart: typeof peer.hostPart === "number" && Number.isFinite(peer.hostPart) ? peer.hostPart : null,
             expanded: typeof peer.expanded === "boolean" ? peer.expanded : true,
         }));
 
@@ -390,7 +401,7 @@ const addPostDown = () => config.postDown.push("");
 const removePostDown = (index: number) => config.postDown.splice(index, 1);
 
 const addPeer = () => {
-    config.peers.push({ id: peerIdCounter++, name: "", publicKey: "", allowedIps: "", expanded: true });
+    config.peers.push({ id: peerIdCounter++, name: "", publicKey: "", hostPart: null, expanded: true });
 };
 const removePeer = (index: number) => config.peers.splice(index, 1);
 
@@ -411,9 +422,21 @@ const copyPublicKey = async () => {
     await navigator.clipboard.writeText(config.publicKey);
 };
 
+const getHostBase = (host: string): string => host.trim().replace(/\/24$/, "");
+
+const getPeerNetworkPrefix = (host: string): string => {
+    const hostParts = getHostBase(host).split(".");
+    if (hostParts.length !== 4) return "10.8.0";
+
+    return hostParts.slice(0, 3).join(".");
+};
+
 const generatedConfig = computed(() => {
     let conf = `[Interface]\n`;
-    if (config.host) conf += `Address = ${config.host}\n`;
+    const hostBase = getHostBase(config.host);
+    const peerNetworkPrefix = getPeerNetworkPrefix(hostBase);
+
+    if (hostBase) conf += `Address = ${hostBase}/24\n`;
     if (config.port) conf += `ListenPort = ${config.port}\n`;
     if (config.mtu) conf += `MTU = ${config.mtu}\n`;
     if (config.privateKey) conf += `PrivateKey = ${config.privateKey}\n`;
@@ -426,11 +449,12 @@ const generatedConfig = computed(() => {
     });
 
     config.peers.forEach((peer) => {
-        if (!peer.publicKey.trim() && !peer.allowedIps.trim()) return;
+        const hostPart = typeof peer.hostPart === "number" ? peer.hostPart : null;
+        if (!peer.publicKey.trim() && hostPart === null) return;
         conf += `\n[Peer]\n`;
         if (peer.name.trim()) conf += `# ${peer.name.trim()}\n`;
         if (peer.publicKey.trim()) conf += `PublicKey = ${peer.publicKey.trim()}\n`;
-        if (peer.allowedIps.trim()) conf += `AllowedIPs = ${peer.allowedIps.trim()}\n`;
+        if (hostPart !== null) conf += `AllowedIPs = ${peerNetworkPrefix}.${hostPart}/32\n`;
     });
     return conf;
 });
