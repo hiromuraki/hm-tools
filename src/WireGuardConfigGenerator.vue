@@ -65,12 +65,21 @@
                 <label class="block text-sm font-semibold mb-1.5 text-gray-600"
                     >PublicKey (公钥 - 自动由私钥生成)</label
                 >
-                <input
-                    type="text"
-                    v-model="config.publicKey"
-                    readonly
-                    class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none bg-gray-100 text-gray-500 cursor-not-allowed"
-                />
+                <div class="flex items-center gap-2">
+                    <input
+                        type="text"
+                        v-model="config.publicKey"
+                        readonly
+                        class="min-w-0 flex-1 p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none bg-gray-100 text-gray-500 cursor-not-allowed"
+                    />
+                    <button
+                        class="shrink-0 rounded-md border border-sky-600 bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-sky-700 hover:bg-sky-700"
+                        type="button"
+                        @click="copyPublicKey"
+                    >
+                        复制
+                    </button>
+                </div>
             </div>
 
             <h3 class="text-base font-semibold my-4 text-gray-600">PostUp 规则</h3>
@@ -136,49 +145,99 @@
                 :key="peer.id"
             >
                 <div
-                    class="flex justify-between items-center mb-4 pb-2.5 border-b border-dashed border-gray-200"
+                    class="group mb-4 flex cursor-pointer items-center justify-between gap-3 border-b border-dashed border-gray-200 pb-2.5 transition-colors hover:border-sky-300 hover:bg-sky-50/40"
+                    role="button"
+                    tabindex="0"
+                    @click="peer.expanded = !peer.expanded"
+                    @keydown.enter.prevent="peer.expanded = !peer.expanded"
+                    @keydown.space.prevent="peer.expanded = !peer.expanded"
                 >
-                    <span class="text-sm font-semibold text-gray-600">节点 #{{ index + 1 }}</span>
+                    <span class="min-w-0 text-sm font-semibold text-gray-600 transition-colors group-hover:text-gray-800">
+                        {{ peer.name.trim() ? peer.name.trim() : `节点 #${index + 1}` }}
+                    </span>
+                    <button
+                        class="shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:text-gray-700"
+                        type="button"
+                        @click.stop="peer.expanded = !peer.expanded"
+                        aria-label="切换节点展开状态"
+                    >
+                        <svg
+                            v-if="peer.expanded"
+                            viewBox="0 0 20 20"
+                            class="h-4 w-4"
+                            fill="none"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M5 12l5-5 5 5"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        </svg>
+                        <svg
+                            v-else
+                            viewBox="0 0 20 20"
+                            class="h-4 w-4"
+                            fill="none"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M5 8l5 5 5-5"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        </svg>
+                    </button>
+                </div>
+
+                <div v-if="peer.expanded">
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1.5 text-gray-600"
+                            >节点备注 (Name)</label
+                        >
+                        <input
+                            type="text"
+                            v-model="peer.name"
+                            placeholder="例如: 手机 / 笔记本"
+                            class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
+                        />
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1.5 text-gray-600"
+                            >PublicKey (节点公钥)</label
+                        >
+                        <input
+                            type="text"
+                            v-model="peer.publicKey"
+                            placeholder="填入该节点的 PublicKey"
+                            class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
+                        />
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1.5 text-gray-600"
+                            >AllowedIPs (允许的 IP)</label
+                        >
+                        <input
+                            type="text"
+                            v-model="peer.allowedIps"
+                            placeholder="例如: 10.8.0.2/32"
+                            class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
+                        />
+                    </div>
+                </div>
+
+                <div v-if="peer.expanded" class="mt-4 flex justify-end">
                     <button
                         class="px-3 py-1.5 text-red-600 border border-red-200 bg-white rounded-md cursor-pointer text-xs font-semibold transition-colors hover:bg-red-600 hover:text-white hover:border-red-600"
+                        type="button"
                         @click="removePeer(index)"
                     >
                         删除此节点
                     </button>
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-600"
-                        >节点备注 (Name)</label
-                    >
-                    <input
-                        type="text"
-                        v-model="peer.name"
-                        placeholder="例如: 手机 / 笔记本"
-                        class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
-                    />
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-600"
-                        >PublicKey (节点公钥)</label
-                    >
-                    <input
-                        type="text"
-                        v-model="peer.publicKey"
-                        placeholder="填入该节点的 PublicKey"
-                        class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
-                    />
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold mb-1.5 text-gray-600"
-                        >AllowedIPs (允许的 IP)</label
-                    >
-                    <input
-                        type="text"
-                        v-model="peer.allowedIps"
-                        placeholder="例如: 10.8.0.2/32"
-                        class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
-                    />
                 </div>
             </div>
 
@@ -218,6 +277,7 @@ interface Peer {
     name: string;
     publicKey: string;
     allowedIps: string;
+    expanded: boolean;
 }
 
 interface WgConfig {
@@ -281,6 +341,14 @@ const loadConfig = () => {
         const savedConfig = JSON.parse(rawConfig) as Partial<WgConfig>;
         Object.assign(config, createDefaultConfig(), savedConfig);
 
+        config.peers = config.peers.map((peer, index) => ({
+            id: typeof peer.id === "number" ? peer.id : index,
+            name: typeof peer.name === "string" ? peer.name : "",
+            publicKey: typeof peer.publicKey === "string" ? peer.publicKey : "",
+            allowedIps: typeof peer.allowedIps === "string" ? peer.allowedIps : "",
+            expanded: typeof peer.expanded === "boolean" ? peer.expanded : true,
+        }));
+
         peerIdCounter = config.peers.reduce((maxId, peer) => Math.max(maxId, peer.id + 1), 0);
     } catch (error) {
         console.error(error);
@@ -322,7 +390,7 @@ const addPostDown = () => config.postDown.push("");
 const removePostDown = (index: number) => config.postDown.splice(index, 1);
 
 const addPeer = () => {
-    config.peers.push({ id: peerIdCounter++, name: "", publicKey: "", allowedIps: "" });
+    config.peers.push({ id: peerIdCounter++, name: "", publicKey: "", allowedIps: "", expanded: true });
 };
 const removePeer = (index: number) => config.peers.splice(index, 1);
 
@@ -336,6 +404,11 @@ const resetConfig = () => {
 
 const copyGeneratedConfig = async () => {
     await navigator.clipboard.writeText(generatedConfig.value);
+};
+
+const copyPublicKey = async () => {
+    if (!config.publicKey.trim()) return;
+    await navigator.clipboard.writeText(config.publicKey);
 };
 
 const generatedConfig = computed(() => {
