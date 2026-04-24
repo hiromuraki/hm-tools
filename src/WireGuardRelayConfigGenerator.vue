@@ -690,10 +690,11 @@ const generatedConfig = computed(() => {
     const peerNetworkPrefix = getPeerNetworkPrefix(hostBase);
 
     if (config.relayServer.trim()) conf += `# ${config.relayServer.trim()}\n`;
+    if (config.publicKey.trim()) conf += `# PublicKey = ${config.publicKey.trim()}\n`;
+    if (config.privateKey) conf += `PrivateKey = ${config.privateKey}\n`;
     if (hostBase) conf += `Address = ${hostBase}/24\n`;
     if (config.port) conf += `ListenPort = ${config.port}\n`;
     if (config.mtu) conf += `MTU = ${config.mtu}\n`;
-    if (config.privateKey) conf += `PrivateKey = ${config.privateKey}\n`;
 
     config.postUp.forEach((rule) => {
         if (rule.trim()) conf += `PostUp = ${rule.trim()}\n`;
