@@ -373,12 +373,22 @@
                 class="bg-white p-5 rounded-lg border border-gray-200 font-mono text-sm leading-relaxed overflow-x-auto grow whitespace-pre-wrap wrap-break-word shadow-inner"
                 >{{ generatedConfig }}</pre
             >
+            <div class="mt-4 flex justify-end">
+                <button
+                    class="rounded-md border border-sky-600 bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-sky-700 hover:bg-sky-700"
+                    type="button"
+                    @click="downloadConfigPackage"
+                >
+                    下载配置包
+                </button>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import JSZip from "jszip";
 import nacl from "tweetnacl";
 
 interface Peer {
@@ -588,6 +598,51 @@ const copyPeerPublicKey = async (peer: Peer) => {
     ensurePeerKeyPair(peer);
     if (!peer.publicKey.trim()) return;
     await navigator.clipboard.writeText(peer.publicKey);
+};
+
+const sanitizePeerFileStem = (value: string, fallback: string): string => {
+    const cleaned = value.trim().replace(/\s+/g, "_").replace(/[^A-Za-z0-9_-]/g, "");
+    return cleaned || fallback;
+};
+
+const sanitizeArchiveFileName = (value: string, fallback: string): string => {
+    const cleaned = value.trim().replace(/\s+/g, "_").replace(/[^A-Za-z0-9_.-]/g, "");
+    return cleaned || fallback;
+};
+
+const getUniqueFileStem = (baseName: string, usedNames: Set<string>): string => {
+    let candidate = baseName;
+    let suffix = 2;
+
+    while (usedNames.has(candidate)) {
+        candidate = `${baseName}_${suffix}`;
+        suffix += 1;
+    }
+
+    usedNames.add(candidate);
+    return candidate;
+};
+
+const downloadConfigPackage = async () => {
+    const zip = new JSZip();
+    const usedPeerNames = new Set<string>();
+    const packageName = sanitizeArchiveFileName(config.relayServer.trim(), "wireguard-config");
+
+    zip.file("wg0.conf", generatedConfig.value);
+
+    config.peers.forEach((peer, index) => {
+        const baseName = sanitizePeerFileStem(peer.name.trim(), `peer_${index + 1}`);
+        const fileStem = getUniqueFileStem(baseName, usedPeerNames);
+        zip.file(`peers/${fileStem}.conf`, buildClientConfig(peer));
+    });
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `${packageName}.zip`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
 };
 
 const getHostBase = (host: string): string => host.trim().replace(/\/24$/, "");
