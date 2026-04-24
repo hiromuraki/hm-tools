@@ -13,6 +13,18 @@
 
             <div class="mb-4">
                 <label class="block text-sm font-semibold mb-1.5 text-gray-600"
+                    >域名/IP</label
+                >
+                <input
+                    type="text"
+                    v-model="config.relayServer"
+                    placeholder="例如: relay.example.com"
+                    class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
+                />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-semibold mb-1.5 text-gray-600"
                     >Address (主机 IP)</label
                 >
                 <div class="flex items-center gap-2">
@@ -52,18 +64,43 @@
                 <label class="block text-sm font-semibold mb-1.5 text-gray-600"
                     >PrivateKey (私钥)</label
                 >
-                <input
-                    type="text"
-                    v-model="config.privateKey"
-                    @input="derivePublicKey"
-                    class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
-                />
-                <button
-                    class="mt-2 text-xs px-3 py-1.5 bg-white border border-gray-300 rounded-md cursor-pointer font-semibold transition-colors hover:bg-gray-100"
-                    @click="generateKeys"
-                >
-                    重新生成密钥对
-                </button>
+                <div class="relative">
+                    <input
+                        :type="showInterfacePrivateKey ? 'text' : 'password'"
+                        v-model="config.privateKey"
+                        @input="derivePublicKey"
+                        class="w-full p-2.5 pr-16 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
+                    />
+                    <button
+                        class="absolute right-10 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 transition-colors hover:text-gray-700"
+                        type="button"
+                        :aria-label="showInterfacePrivateKey ? '隐藏私钥' : '显示私钥'"
+                        :title="showInterfacePrivateKey ? '隐藏私钥' : '显示私钥'"
+                        @click="showInterfacePrivateKey = !showInterfacePrivateKey"
+                    >
+                        <svg v-if="showInterfacePrivateKey" viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                            <path d="M2.5 10s2.7-5.5 7.5-5.5S17.5 10 17.5 10s-2.7 5.5-7.5 5.5S2.5 10 2.5 10Z" stroke="currentColor" stroke-width="1.6"/>
+                            <circle cx="10" cy="10" r="2.2" stroke="currentColor" stroke-width="1.6"/>
+                        </svg>
+                        <svg v-else viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                            <path d="M3.5 4.5l13 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <path d="M4.5 10s2.5-5 5.5-5c1.1 0 2.1.4 3 .9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M15.5 10s-2.5 5-5.5 5c-1.1 0-2.1-.4-3-.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button
+                        class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 transition-colors hover:text-gray-700"
+                        type="button"
+                        title="重新生成密钥对"
+                        aria-label="重新生成密钥对"
+                        @click="generateKeys"
+                    >
+                        <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                            <path d="M16 10a6 6 0 1 1-1.4-3.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                            <path d="M15.5 3.5v3.5H12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="mb-4">
@@ -141,9 +178,16 @@
                 </button>
             </div>
 
-            <h2 class="mt-0 text-xl font-semibold pb-2 border-b border-gray-200 mb-4">
-                对等节点 (Peers)
-            </h2>
+            <div class="mb-4 flex items-center justify-between gap-3 border-b border-gray-200 pb-2">
+                <h2 class="mt-0 text-xl font-semibold">对等节点 (Peers)</h2>
+                <button
+                    class="shrink-0 rounded-md border border-sky-600 bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:border-sky-700 hover:bg-sky-700"
+                    type="button"
+                    @click="regenerateAllPeerKeys"
+                >
+                    重新生成所有密钥
+                </button>
+            </div>
             <div
                 class="border border-gray-200 p-5 rounded-lg mb-4 bg-white shadow-sm"
                 v-for="(peer, index) in config.peers"
@@ -213,14 +257,65 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-semibold mb-1.5 text-gray-600"
+                            >PrivateKey (私钥)</label
+                        >
+                        <div class="relative">
+                            <input
+                                :type="peer.showPrivateKey ? 'text' : 'password'"
+                                v-model="peer.privateKey"
+                                @input="derivePeerPublicKey(peer)"
+                                class="w-full p-2.5 pr-16 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
+                            />
+                            <button
+                                class="absolute right-10 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 transition-colors hover:text-gray-700"
+                                type="button"
+                                :aria-label="peer.showPrivateKey ? '隐藏私钥' : '显示私钥'"
+                                :title="peer.showPrivateKey ? '隐藏私钥' : '显示私钥'"
+                                @click="peer.showPrivateKey = !peer.showPrivateKey"
+                            >
+                                <svg v-if="peer.showPrivateKey" viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                                    <path d="M2.5 10s2.7-5.5 7.5-5.5S17.5 10 17.5 10s-2.7 5.5-7.5 5.5S2.5 10 2.5 10Z" stroke="currentColor" stroke-width="1.6"/>
+                                    <circle cx="10" cy="10" r="2.2" stroke="currentColor" stroke-width="1.6"/>
+                                </svg>
+                                <svg v-else viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                                    <path d="M3.5 4.5l13 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                    <path d="M4.5 10s2.5-5 5.5-5c1.1 0 2.1.4 3 .9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M15.5 10s-2.5 5-5.5 5c-1.1 0-2.1-.4-3-.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button
+                                class="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 transition-colors hover:text-gray-700"
+                                type="button"
+                                title="重新生成密钥对"
+                                aria-label="重新生成密钥对"
+                                @click="generatePeerKeys(peer)"
+                            >
+                                <svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" aria-hidden="true">
+                                    <path d="M16 10a6 6 0 1 1-1.4-3.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                                    <path d="M15.5 3.5v3.5H12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-1.5 text-gray-600"
                             >PublicKey (节点公钥)</label
                         >
-                        <input
-                            type="text"
-                            v-model="peer.publicKey"
-                            placeholder="填入该节点的 PublicKey"
-                            class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
-                        />
+                        <div class="flex items-center gap-2">
+                            <input
+                                type="text"
+                                v-model="peer.publicKey"
+                                readonly
+                                class="min-w-0 flex-1 p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none bg-gray-100 text-gray-500 cursor-not-allowed"
+                            />
+                            <button
+                                class="shrink-0 rounded-md border border-sky-600 bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:border-sky-700 hover:bg-sky-700"
+                                type="button"
+                                @click="copyPeerPublicKey(peer)"
+                            >
+                                复制
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-semibold mb-1.5 text-gray-600"
@@ -230,14 +325,21 @@
                             type="number"
                             min="1"
                             step="1"
-                            v-model="peer.hostPart"
+                            v-model.number="peer.hostPart"
                             placeholder="例如: 101"
                             class="w-full p-2.5 border border-gray-300 rounded-md box-border text-sm font-mono transition-colors focus:outline-none focus:border-black"
                         />
                     </div>
                 </div>
 
-                <div v-if="peer.expanded" class="mt-4 flex justify-end">
+                <div class="mt-4 flex justify-end gap-2">
+                    <button
+                        class="px-3 py-1.5 text-sky-700 border border-sky-200 bg-white rounded-md cursor-pointer text-xs font-semibold transition-colors hover:bg-sky-700 hover:text-white hover:border-sky-700"
+                        type="button"
+                        @click="copyClientConfig(peer)"
+                    >
+                        复制客户端配置
+                    </button>
                     <button
                         class="px-3 py-1.5 text-red-600 border border-red-200 bg-white rounded-md cursor-pointer text-xs font-semibold transition-colors hover:bg-red-600 hover:text-white hover:border-red-600"
                         type="button"
@@ -276,21 +378,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import nacl from "tweetnacl";
 
 interface Peer {
     id: number;
     name: string;
+    privateKey: string;
     publicKey: string;
     hostPart: number | null;
     expanded: boolean;
+    showPrivateKey: boolean;
 }
 
 interface WgConfig {
     host: string;
     port: number | null;
     mtu: number | null;
+    relayServer: string;
     privateKey: string;
     publicKey: string;
     postUp: string[];
@@ -304,6 +409,7 @@ const createDefaultConfig = (): WgConfig => ({
     host: "10.8.0.1",
     port: 51820,
     mtu: 1420,
+    relayServer: "",
     privateKey: "",
     publicKey: "",
     postUp: [
@@ -333,6 +439,7 @@ const decodeBase64 = (str: string): Uint8Array | null => {
 };
 
 const config = reactive<WgConfig>(createDefaultConfig());
+const showInterfacePrivateKey = ref(false);
 
 let peerIdCounter = 0;
 
@@ -355,12 +462,15 @@ const loadConfig = () => {
         config.peers = config.peers.map((peer, index) => ({
             id: typeof peer.id === "number" ? peer.id : index,
             name: typeof peer.name === "string" ? peer.name : "",
+            privateKey: typeof peer.privateKey === "string" ? peer.privateKey : "",
             publicKey: typeof peer.publicKey === "string" ? peer.publicKey : "",
             hostPart: typeof peer.hostPart === "number" && Number.isFinite(peer.hostPart) ? peer.hostPart : null,
             expanded: typeof peer.expanded === "boolean" ? peer.expanded : true,
+            showPrivateKey: typeof peer.showPrivateKey === "boolean" ? peer.showPrivateKey : false,
         }));
 
         peerIdCounter = config.peers.reduce((maxId, peer) => Math.max(maxId, peer.id + 1), 0);
+        config.peers.forEach((peer) => ensurePeerKeyPair(peer));
     } catch (error) {
         console.error(error);
     }
@@ -395,15 +505,67 @@ const derivePublicKey = () => {
     }
 };
 
+const generatePeerKeys = (peer: Peer) => {
+    const secretKey = nacl.randomBytes(32);
+    secretKey[0]! &= 248;
+    secretKey[31]! &= 127;
+    secretKey[31]! |= 64;
+    const publicKey = nacl.scalarMult.base(secretKey);
+    peer.privateKey = encodeBase64(secretKey);
+    peer.publicKey = encodeBase64(publicKey);
+};
+
+const derivePeerPublicKey = (peer: Peer) => {
+    if (!peer.privateKey.trim()) {
+        generatePeerKeys(peer);
+        return;
+    }
+
+    const secretKey = decodeBase64(peer.privateKey);
+    if (secretKey && secretKey.length === 32) {
+        try {
+            peer.publicKey = encodeBase64(nacl.scalarMult.base(secretKey));
+        } catch (error) {
+            console.error(error);
+            peer.publicKey = "(无效的私钥格式)";
+        }
+    } else {
+        peer.publicKey = "(密钥长度或格式不正确)";
+    }
+};
+
+const ensurePeerKeyPair = (peer: Peer) => {
+    if (!peer.privateKey.trim()) {
+        generatePeerKeys(peer);
+        return;
+    }
+
+    derivePeerPublicKey(peer);
+};
+
 const addPostUp = () => config.postUp.push("");
 const removePostUp = (index: number) => config.postUp.splice(index, 1);
 const addPostDown = () => config.postDown.push("");
 const removePostDown = (index: number) => config.postDown.splice(index, 1);
 
 const addPeer = () => {
-    config.peers.push({ id: peerIdCounter++, name: "", publicKey: "", hostPart: null, expanded: true });
+    config.peers.push({
+        id: peerIdCounter++,
+        name: "",
+        privateKey: "",
+        publicKey: "",
+        hostPart: null,
+        expanded: true,
+        showPrivateKey: false,
+    });
 };
 const removePeer = (index: number) => config.peers.splice(index, 1);
+
+const regenerateAllPeerKeys = () => {
+    config.peers.forEach((peer) => {
+        generatePeerKeys(peer);
+    });
+};
 
 const resetConfig = () => {
     const defaultConfig = createDefaultConfig();
@@ -422,13 +584,49 @@ const copyPublicKey = async () => {
     await navigator.clipboard.writeText(config.publicKey);
 };
 
+const copyPeerPublicKey = async (peer: Peer) => {
+    ensurePeerKeyPair(peer);
+    if (!peer.publicKey.trim()) return;
+    await navigator.clipboard.writeText(peer.publicKey);
+};
+
 const getHostBase = (host: string): string => host.trim().replace(/\/24$/, "");
 
 const getPeerNetworkPrefix = (host: string): string => {
-    const hostParts = getHostBase(host).split(".");
-    if (hostParts.length !== 4) return "10.8.0";
+    const hostParts = getHostBase(host)
+        .split(".")
+        .map((part) => part.trim())
+        .filter(Boolean);
 
-    return hostParts.slice(0, 3).join(".");
+    if (hostParts.length >= 3) return hostParts.slice(0, 3).join(".");
+
+    return "10.8.0";
+};
+
+const buildClientConfig = (peer: Peer): string => {
+    ensurePeerKeyPair(peer);
+
+    const hostBase = getHostBase(config.host);
+    const peerNetworkPrefix = getPeerNetworkPrefix(hostBase);
+    const hostPart = typeof peer.hostPart === "number" ? peer.hostPart : 101;
+    const relayEndpoint = config.relayServer.trim() ? `${config.relayServer.trim()}:51820` : "";
+
+    return [
+        "[Interface]",
+        `PrivateKey = ${peer.privateKey}`,
+        `Address = ${peerNetworkPrefix}.${hostPart}/24`,
+        "MTU = 1280",
+        "",
+        "[Peer]",
+        `PublicKey = ${config.publicKey}`,
+        `AllowedIPs = ${peerNetworkPrefix}.0/24`,
+        `Endpoint = ${relayEndpoint}`,
+        "PersistentKeepalive = 25",
+    ].join("\n");
+};
+
+const copyClientConfig = async (peer: Peer) => {
+    await navigator.clipboard.writeText(buildClientConfig(peer));
 };
 
 const generatedConfig = computed(() => {
@@ -439,6 +637,7 @@ const generatedConfig = computed(() => {
     if (hostBase) conf += `Address = ${hostBase}/24\n`;
     if (config.port) conf += `ListenPort = ${config.port}\n`;
     if (config.mtu) conf += `MTU = ${config.mtu}\n`;
+    if (config.relayServer.trim()) conf += `# Relay Server = ${config.relayServer.trim()}\n`;
     if (config.privateKey) conf += `PrivateKey = ${config.privateKey}\n`;
 
     config.postUp.forEach((rule) => {
