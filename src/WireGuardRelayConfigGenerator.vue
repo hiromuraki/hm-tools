@@ -634,10 +634,10 @@ const generatedConfig = computed(() => {
     const hostBase = getHostBase(config.host);
     const peerNetworkPrefix = getPeerNetworkPrefix(hostBase);
 
+    if (config.relayServer.trim()) conf += `# ${config.relayServer.trim()}\n`;
     if (hostBase) conf += `Address = ${hostBase}/24\n`;
     if (config.port) conf += `ListenPort = ${config.port}\n`;
     if (config.mtu) conf += `MTU = ${config.mtu}\n`;
-    if (config.relayServer.trim()) conf += `# Relay Server = ${config.relayServer.trim()}\n`;
     if (config.privateKey) conf += `PrivateKey = ${config.privateKey}\n`;
 
     config.postUp.forEach((rule) => {
