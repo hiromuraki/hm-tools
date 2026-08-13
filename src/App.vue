@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import WireGuardRelayConfigGenerator from "./WireGuardRelayConfigGenerator.vue";
+import WireGuardRelayConfigGenerator from "./wireguard-relay-config-generator/WireGuardRelayConfigGenerator.vue";
+import GamesrvLaunchScriptGenerator from "./gamesrv-launch-script-generator/GamesrvLaunchScriptGenerator.vue";
 
 interface ToolItem {
     name: string;
@@ -15,6 +16,12 @@ const tools: ToolItem[] = [
         path: "/wireguard-relay-config-generator",
         description: "生成 WireGuard 中继节点配置",
         component: WireGuardRelayConfigGenerator,
+    },
+    {
+        name: "游戏服务器启动脚本生成器",
+        path: "/gamesrv-launch-script-generator",
+        description: "生成 hm-gamesrv 游戏服务器 Podman 启动脚本",
+        component: GamesrvLaunchScriptGenerator,
     },
 ];
 
