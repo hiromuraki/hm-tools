@@ -55,9 +55,9 @@ jobs:
                   provenance: false
                   # 同时打上 latest 和 日期 tag
                   tags: |
-                      ghcr.io/${{ steps.prep.outputs.owner }}/game-name:${{ steps.prep.outputs.date }}
-                      ghcr.io/${{ steps.prep.outputs.owner }}/game-name:latest
-                      ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_REGISTRY_NAMESPACE }}/game-name:${{ steps.prep.outputs.date }}
-                      ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_REGISTRY_NAMESPACE }}/game-name:latest
+                      ghcr.io/${{ steps.prep.outputs.owner }}/hm-tools:${{ steps.prep.outputs.date }}
+                      ghcr.io/${{ steps.prep.outputs.owner }}/hm-tools:latest
+                      ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_REGISTRY_NAMESPACE }}/hm-tools:${{ steps.prep.outputs.date }}
+                      ${{ secrets.ALIYUN_REGISTRY }}/${{ secrets.ALIYUN_REGISTRY_NAMESPACE }}/hm-tools:latest
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
