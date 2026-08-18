@@ -81,6 +81,11 @@ export const gameRepos: GameRepo[] = [
         url: "https://github.com/hm-gamesrv/counter-strike-source",
     },
     {
+        key: "counter-strike-global-offensive",
+        name: "Counter-Strike: Global Offensive",
+        url: "https://github.com/hm-gamesrv/counter-strike-global-offensive",
+    },
+    {
         key: "left-4-dead-2",
         name: "Left 4 Dead 2",
         url: "https://github.com/hm-gamesrv/left-4-dead-2",
